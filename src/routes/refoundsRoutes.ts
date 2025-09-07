@@ -11,4 +11,10 @@ refoundsRoutes.post(
     refoundsController.create
 );
 
+refoundsRoutes.get(
+    "/",
+    verifyUserAuthorization(["manager"]),
+    refoundsController.index
+);
+
 export { refoundsRoutes };
