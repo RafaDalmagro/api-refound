@@ -17,4 +17,10 @@ refoundsRoutes.get(
     refoundsController.index
 );
 
+refoundsRoutes.get(
+    "/:id",
+    verifyUserAuthorization(["manager"]),
+    refoundsController.show
+);
+
 export { refoundsRoutes };

@@ -9,11 +9,17 @@ class RefoundsController {
     async index(req: Request, res: Response, next: NextFunction) {
         const querySchema = z.object({
             name: z.string().optional().default(""),
+            page: z.coerce.number().optional().default(1),
+            perPage: z.coerce.number().optional().default(10),
         });
 
-        const { name } = querySchema.parse(req.query);
+        const { name, page, perPage } = querySchema.parse(req.query);
+
+        const skip = (page - 1) * perPage;
 
         const refounds = await prisma.refounds.findMany({
+            skip,
+            take: perPage,
             where: {
                 user: {
                     name: {
@@ -34,7 +40,27 @@ class RefoundsController {
             },
         });
 
-        return res.json({ refounds });
+        const totalRecords = await prisma.refounds.count({
+            where: {
+                user: {
+                    name: {
+                        contains: name.trim(),
+                    },
+                },
+            },
+        });
+
+        const totalPages = Math.ceil(totalRecords / perPage);
+
+        return res.json({
+            refounds,
+            pagination: {
+                totalRecords,
+                totalPages: totalPages > 0 ? totalPages : 1,
+                page,
+                perPage,
+            },
+        });
     }
 
     async create(req: Request, res: Response, next: NextFunction) {
@@ -67,6 +93,27 @@ class RefoundsController {
         });
 
         return res.status(201).json(refound);
+    }
+
+    async show(req: Request, res: Response, next: NextFunction) {
+        const paramsSchema = z.object({
+            id: z.string().uuid({ message: "ID inválido." }),
+        });
+
+        const { id } = paramsSchema.parse(req.params);
+
+        const refound = await prisma.refounds.findFirst({
+            where: { id },
+            include: {
+                user: {
+                    select: {
+                        name: true,
+                    },
+                },
+            },
+        });
+
+        return res.json({ refound });
     }
 }
 
